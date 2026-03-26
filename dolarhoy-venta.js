@@ -29,22 +29,27 @@ async function fetchTextWithTimeout(url, timeoutMs) {
   }
 }
 
-function extractVenta(html) {
+function extractVentas(html) {
   const re =
-    /<div class="label">Venta<\/div><div class="val">\s*\$([\d.,]+)\s*<\/div><\/div>/;
+    /<div class="label">Venta<\/div><div class="val">\s*\$([\d.,]+)\s*<\/div><\/div>/g;
 
-  const m = html.match(re);
-  return m ? m[1] : null;
+  return [...html.matchAll(re)].map((m) => m[1]);
 }
 
 (async () => {
   const html = await fetchTextWithTimeout(URL, REQUEST_TIMEOUT_MS);
-  const venta = extractVenta(html);
-  if (!venta) {
-    throw new Error("No pude extraer el precio de Venta.");
+  const ventas = extractVentas(html);
+  const ventaBlue = ventas[0] ?? null;
+  const ventaOficial = ventas[1] ?? null;
+
+  if (!ventaBlue || !ventaOficial) {
+    throw new Error(
+      `No pude extraer ventas suficientes. Encontré ${ventas.length} apariciones.`
+    );
   }
 
-  console.log(`Venta: $${venta.replace(/\s+/g, "")}`);
+  console.log(`Venta dolar blue: $${ventaBlue.replace(/\s+/g, "")}`);
+  console.log(`Venta dolar oficial: $${ventaOficial.replace(/\s+/g, "")}`);
 })().catch((err) => {
   console.error(err?.message || String(err));
   process.exitCode = 1;
