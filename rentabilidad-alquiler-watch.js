@@ -73,10 +73,12 @@ function computeYield(dpto, ventaOficial) {
   const alquilerMensual = safeNumber(dpto?.alquiler_ars_mensual);
   const totalUsd = safeNumber(dpto?.total_usd);
 
+  const ingresoMensualUsd = alquilerMensual / usd;
   const alquilerAnualUsd = (alquilerMensual * 12) / usd;
   const rentabilidad = alquilerAnualUsd / totalUsd; // ratio, ej 0.10 => 10%
 
   return {
+    ingresoMensualUsd,
     alquilerAnualUsd,
     rentabilidad,
   };
@@ -98,11 +100,15 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
   }
 
   const rows = departamentos.map((d) => {
-    const { alquilerAnualUsd, rentabilidad } = computeYield(d, ventaOficial);
+    const { ingresoMensualUsd, alquilerAnualUsd, rentabilidad } = computeYield(
+      d,
+      ventaOficial
+    );
     return {
       id: d.id,
       alquiler_ars_mensual: d.alquiler_ars_mensual,
       total_usd: d.total_usd,
+      ingreso_mensual_usd: ingresoMensualUsd,
       alquiler_anual_usd: alquilerAnualUsd,
       rentabilidad_pct: rentabilidad * 100,
     };
@@ -111,6 +117,7 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
   const headers = [
     ["ID", 18],
     ["Alquiler ARS/mes", 18],
+    ["Ingreso USD/mes", 16],
     ["Costo total USD", 16],
     ["Alquiler anual USD", 18],
     ["Rentab. anual", 14],
@@ -128,6 +135,7 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
       [
         padRight(r.id, 18),
         padLeft(formatMoney(r.alquiler_ars_mensual, 0), 18),
+        padLeft(formatMoney(r.ingreso_mensual_usd, 2), 16),
         padLeft(formatMoney(r.total_usd, 0), 16),
         padLeft(formatMoney(r.alquiler_anual_usd, 2), 18),
         padLeft(formatPercent(r.rentabilidad_pct, 3), 14),
@@ -135,6 +143,10 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     );
   }
 
+  const totalMonthlyRentUsd = rows
+    .map((r) => r.ingreso_mensual_usd)
+    .filter((n) => Number.isFinite(n))
+    .reduce((a, b) => a + b, 0);
   const totalInvested = rows
     .map((r) => r.total_usd)
     .filter((n) => Number.isFinite(n))
@@ -149,6 +161,7 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
   console.log(
     `${ANSI.bold}Cartera total${ANSI.reset}  ` +
       `invertido USD ${formatMoney(totalInvested, 0)}  ` +
+      `ingreso mensual USD ${formatMoney(totalMonthlyRentUsd, 2)}  ` +
       `alquiler anual USD ${formatMoney(totalAnnualRentUsd, 2)}  ` +
       `rentab. ${formatPercent(portfolioYield * 100, 3)}`
   );
