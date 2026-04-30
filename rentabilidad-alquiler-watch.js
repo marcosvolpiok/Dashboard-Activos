@@ -44,6 +44,7 @@ function safeNumber(n) {
 function normalizeDepartamento(raw, idx) {
   const id = typeof raw?.id === "string" && raw.id.trim() ? raw.id.trim() : `dpto_${idx + 1}`;
 
+  const m2Total = safeNumber(raw?.m2_total);
   const alquilerArsMensual = safeNumber(raw?.alquiler_ars_mensual);
   const compraUsd = safeNumber(raw?.compra_usd);
 
@@ -54,6 +55,7 @@ function normalizeDepartamento(raw, idx) {
 
   return {
     id,
+    m2_total: m2Total,
     alquiler_ars_mensual: alquilerArsMensual,
     compra_usd: compraUsd,
     extras_usd: extrasUsd,
@@ -111,10 +113,18 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
       rentabilidad,
       rentabilidad10y,
     } = computeYield(d, ventaOficial);
+
+    const usdM2 =
+      Number.isFinite(d?.m2_total) && d.m2_total > 0
+        ? d.total_usd / d.m2_total
+        : NaN;
+
     return {
       id: d.id,
+      m2_total: d.m2_total,
       alquiler_ars_mensual: d.alquiler_ars_mensual,
       total_usd: d.total_usd,
+      usd_m2: usdM2,
       ingreso_mensual_usd: ingresoMensualUsd,
       ingreso_10a_usd: ingreso10yUsd,
       alquiler_anual_usd: alquilerAnualUsd,
@@ -125,10 +135,12 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
 
   const headers = [
     ["ID", 18],
+    ["m2", 6],
     ["Alquiler ARS/mes", 18],
     ["Ingreso USD/mes", 16],
     ["Ingreso USD/10a", 16],
     ["Costo total USD", 16],
+    ["USD/m2", 10],
     ["Alquiler anual USD", 18],
     ["Rentab. anual", 14],
     ["Rentab. 10a", 12],
@@ -145,10 +157,12 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     console.log(
       [
         padRight(r.id, 18),
+        padLeft(formatMoney(r.m2_total, 0), 6),
         padLeft(formatMoney(r.alquiler_ars_mensual, 0), 18),
         padLeft(formatMoney(r.ingreso_mensual_usd, 2), 16),
         padLeft(formatMoney(r.ingreso_10a_usd, 2), 16),
         padLeft(formatMoney(r.total_usd, 0), 16),
+        padLeft(formatMoney(r.usd_m2, 0), 10),
         padLeft(formatMoney(r.alquiler_anual_usd, 2), 18),
         padLeft(formatPercent(r.rentabilidad_pct, 3), 14),
         padLeft(formatPercent(r.rentabilidad_10a_pct, 3), 12),
@@ -156,6 +170,10 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     );
   }
 
+  const totalM2 = rows
+    .map((r) => r.m2_total)
+    .filter((n) => Number.isFinite(n))
+    .reduce((a, b) => a + b, 0);
   const totalMonthlyRentUsd = rows
     .map((r) => r.ingreso_mensual_usd)
     .filter((n) => Number.isFinite(n))
@@ -171,11 +189,14 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     .reduce((a, b) => a + b, 0);
   const portfolioYield = totalAnnualRentUsd / totalInvested;
   const portfolioYield10y = (totalAnnualRentUsd * 10) / totalInvested;
+  const portfolioUsdM2 = totalM2 > 0 ? totalInvested / totalM2 : NaN;
 
   console.log("");
   console.log(
     `${ANSI.bold}Cartera total${ANSI.reset}  ` +
+      `m2 ${formatMoney(totalM2, 0)}  ` +
       `invertido USD ${formatMoney(totalInvested, 0)}  ` +
+      `USD/m2 ${formatMoney(portfolioUsdM2, 0)}  ` +
       `ingreso mensual USD ${formatMoney(totalMonthlyRentUsd, 2)}  ` +
       `ingreso 10a USD ${formatMoney(totalIncome10yUsd, 2)}  ` +
       `alquiler anual USD ${formatMoney(totalAnnualRentUsd, 2)}  ` +
