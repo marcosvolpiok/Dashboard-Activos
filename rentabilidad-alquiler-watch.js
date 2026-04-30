@@ -74,13 +74,17 @@ function computeYield(dpto, ventaOficial) {
   const totalUsd = safeNumber(dpto?.total_usd);
 
   const ingresoMensualUsd = alquilerMensual / usd;
+  const ingreso10yUsd = ingresoMensualUsd * 12 * 10;
   const alquilerAnualUsd = (alquilerMensual * 12) / usd;
   const rentabilidad = alquilerAnualUsd / totalUsd; // ratio, ej 0.10 => 10%
+  const rentabilidad10y = (alquilerAnualUsd * 10) / totalUsd; // ratio a 10 años
 
   return {
     ingresoMensualUsd,
+    ingreso10yUsd,
     alquilerAnualUsd,
     rentabilidad,
+    rentabilidad10y,
   };
 }
 
@@ -100,17 +104,22 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
   }
 
   const rows = departamentos.map((d) => {
-    const { ingresoMensualUsd, alquilerAnualUsd, rentabilidad } = computeYield(
-      d,
-      ventaOficial
-    );
+    const {
+      ingresoMensualUsd,
+      ingreso10yUsd,
+      alquilerAnualUsd,
+      rentabilidad,
+      rentabilidad10y,
+    } = computeYield(d, ventaOficial);
     return {
       id: d.id,
       alquiler_ars_mensual: d.alquiler_ars_mensual,
       total_usd: d.total_usd,
       ingreso_mensual_usd: ingresoMensualUsd,
+      ingreso_10a_usd: ingreso10yUsd,
       alquiler_anual_usd: alquilerAnualUsd,
       rentabilidad_pct: rentabilidad * 100,
+      rentabilidad_10a_pct: rentabilidad10y * 100,
     };
   });
 
@@ -118,9 +127,11 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     ["ID", 18],
     ["Alquiler ARS/mes", 18],
     ["Ingreso USD/mes", 16],
+    ["Ingreso USD/10a", 16],
     ["Costo total USD", 16],
     ["Alquiler anual USD", 18],
     ["Rentab. anual", 14],
+    ["Rentab. 10a", 12],
   ];
 
   console.log(
@@ -136,9 +147,11 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
         padRight(r.id, 18),
         padLeft(formatMoney(r.alquiler_ars_mensual, 0), 18),
         padLeft(formatMoney(r.ingreso_mensual_usd, 2), 16),
+        padLeft(formatMoney(r.ingreso_10a_usd, 2), 16),
         padLeft(formatMoney(r.total_usd, 0), 16),
         padLeft(formatMoney(r.alquiler_anual_usd, 2), 18),
         padLeft(formatPercent(r.rentabilidad_pct, 3), 14),
+        padLeft(formatPercent(r.rentabilidad_10a_pct, 3), 12),
       ].join("  ")
     );
   }
@@ -147,6 +160,7 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     .map((r) => r.ingreso_mensual_usd)
     .filter((n) => Number.isFinite(n))
     .reduce((a, b) => a + b, 0);
+  const totalIncome10yUsd = totalMonthlyRentUsd * 12 * 10;
   const totalInvested = rows
     .map((r) => r.total_usd)
     .filter((n) => Number.isFinite(n))
@@ -156,14 +170,17 @@ function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
     .filter((n) => Number.isFinite(n))
     .reduce((a, b) => a + b, 0);
   const portfolioYield = totalAnnualRentUsd / totalInvested;
+  const portfolioYield10y = (totalAnnualRentUsd * 10) / totalInvested;
 
   console.log("");
   console.log(
     `${ANSI.bold}Cartera total${ANSI.reset}  ` +
       `invertido USD ${formatMoney(totalInvested, 0)}  ` +
       `ingreso mensual USD ${formatMoney(totalMonthlyRentUsd, 2)}  ` +
+      `ingreso 10a USD ${formatMoney(totalIncome10yUsd, 2)}  ` +
       `alquiler anual USD ${formatMoney(totalAnnualRentUsd, 2)}  ` +
-      `rentab. ${formatPercent(portfolioYield * 100, 3)}`
+      `rentab. ${formatPercent(portfolioYield * 100, 3)}  ` +
+      `rentab. 10a ${formatPercent(portfolioYield10y * 100, 3)}`
   );
   console.log("");
   console.log(
