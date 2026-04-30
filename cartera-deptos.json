@@ -1,0 +1,29 @@
+{
+  "departamentos": [
+    {
+      "id": "Juan B. Justo",
+      "alquiler_ars_mensual": 500000,
+      "compra_usd": 40000,
+      "extras_usd": [3400, 1800]
+    },
+    {
+      "id": "Río de Janeiro",
+      "alquiler_ars_mensual": 340000,
+      "compra_usd": 46000,
+      "extras_usd": [3910, 2500]
+    },
+    {
+      "id": "Bahía Blanca",
+      "alquiler_ars_mensual": 650000,
+      "compra_usd": 52000,
+      "extras_usd": [4420, 4500]
+    },
+    {
+      "id": "Terrada",
+      "alquiler_ars_mensual": 550000,
+      "compra_usd": 48000,
+      "extras_usd": [4080, 3700]
+    }
+  ]
+}
+

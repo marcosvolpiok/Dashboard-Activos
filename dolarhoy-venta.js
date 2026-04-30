@@ -5,6 +5,13 @@ const REQUEST_TIMEOUT_MS = 12_000;
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
+function parseMoneyAr(s) {
+  if (typeof s !== "string") return NaN;
+  const cleaned = s.replace(/\s+/g, "").replace(/\./g, "").replace(",", ".");
+  const n = Number.parseFloat(cleaned);
+  return Number.isNaN(n) ? NaN : n;
+}
+
 async function fetchTextWithTimeout(url, timeoutMs) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
@@ -36,7 +43,7 @@ function extractVentas(html) {
   return [...html.matchAll(re)].map((m) => m[1]);
 }
 
-(async () => {
+async function fetchDolarVentas() {
   const html = await fetchTextWithTimeout(URL, REQUEST_TIMEOUT_MS);
   const ventas = extractVentas(html);
   const ventaBlue = ventas[0] ?? null;
@@ -48,10 +55,26 @@ function extractVentas(html) {
     );
   }
 
-  console.log(`Venta dolar blue: $${ventaBlue.replace(/\s+/g, "")}`);
-  console.log(`Venta dolar oficial: $${ventaOficial.replace(/\s+/g, "")}`);
-})().catch((err) => {
-  console.error(err?.message || String(err));
-  process.exitCode = 1;
-});
+  return {
+    ventaBlueText: ventaBlue.replace(/\s+/g, ""),
+    ventaOficialText: ventaOficial.replace(/\s+/g, ""),
+    ventaBlue: parseMoneyAr(ventaBlue),
+    ventaOficial: parseMoneyAr(ventaOficial),
+  };
+}
+
+module.exports = {
+  fetchDolarVentas,
+};
+
+if (require.main === module) {
+  (async () => {
+    const { ventaBlueText, ventaOficialText } = await fetchDolarVentas();
+    console.log(`Venta dolar blue: $${ventaBlueText}`);
+    console.log(`Venta dolar oficial: $${ventaOficialText}`);
+  })().catch((err) => {
+    console.error(err?.message || String(err));
+    process.exitCode = 1;
+  });
+}
 
