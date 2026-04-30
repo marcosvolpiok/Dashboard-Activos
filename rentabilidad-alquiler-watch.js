@@ -8,7 +8,7 @@ const { fetchDolarVentas } = require("./dolarhoy-venta");
 const PORTFOLIO_PATH =
   process.argv[2] || path.join(__dirname, "cartera-deptos.json");
 
-const POLL_MS = 60 * 60 * 1000;
+const POLL_MS = 60 * 60 * 1000 * 5;
 
 const ANSI = {
   reset: "\x1b[0m",
