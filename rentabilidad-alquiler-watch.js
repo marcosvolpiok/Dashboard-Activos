@@ -4,6 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs/promises");
 
 const { fetchDolarVentas } = require("./dolarhoy-venta");
+const { fetchBitcoin } = require("./bitcoin-watch");
 
 const PORTFOLIO_PATH =
   process.argv[2] || path.join(__dirname, "cartera-deptos.json");
@@ -90,13 +91,28 @@ function computeYield(dpto, ventaOficial) {
   };
 }
 
-function renderScreen({ ventaOficial, portfolioPath, departamentos }) {
+function renderScreen({
+  ventaOficial,
+  ventaBlue,
+  btc,
+  portfolioPath,
+  departamentos,
+}) {
   console.clear();
   const nowLocal = new Date().toLocaleString();
 
   console.log(`${ANSI.bold}Rentabilidad alquiler - cartera de departamentos${ANSI.reset}`);
   console.log(`${ANSI.dim}Local:${ANSI.reset} ${nowLocal}`);
   console.log(`${ANSI.dim}Dólar oficial (venta):${ANSI.reset} $${formatMoney(ventaOficial, 2)}`);
+  console.log(`${ANSI.dim}Dólar blue (venta):${ANSI.reset} $${formatMoney(ventaBlue, 2)}`);
+  console.log(
+    `${ANSI.dim}BTC:${ANSI.reset} $${formatMoney(btc?.price, 2)}  ` +
+      `${ANSI.dim}24h:${ANSI.reset} ${formatMoney(btc?.change24h, 2)} (${formatPercent(
+        btc?.change24hPercent,
+        3
+      )})  ` +
+      `${ANSI.dim}High 24h:${ANSI.reset} $${formatMoney(btc?.high24h, 2)}`
+  );
   console.log(`${ANSI.dim}Cartera:${ANSI.reset} ${portfolioPath}`);
   console.log("");
 
@@ -223,12 +239,17 @@ function renderErrorScreen(err, portfolioPath) {
 async function tick() {
   try {
     const departamentos = await readPortfolio(PORTFOLIO_PATH);
-    const { ventaOficial } = await fetchDolarVentas();
+    const [{ ventaOficial, ventaBlue }, btc] = await Promise.all([
+      fetchDolarVentas(),
+      fetchBitcoin(),
+    ]);
     if (!Number.isFinite(ventaOficial)) {
       throw new Error("No pude parsear el valor de venta del dólar oficial.");
     }
     renderScreen({
       ventaOficial,
+      ventaBlue,
+      btc,
       portfolioPath: PORTFOLIO_PATH,
       departamentos,
     });

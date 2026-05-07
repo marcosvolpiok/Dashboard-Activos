@@ -71,6 +71,25 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
   }
 }
 
+async function fetchBitcoin() {
+  if (!API_KEY) throw new Error("Falta API key (setear API_NINJAS_KEY).");
+  const payload = await fetchJsonWithTimeout(ENDPOINT, REQUEST_TIMEOUT_MS);
+
+  const price = toNumber(payload?.price);
+  const chg = toNumber(payload?.["24h_price_change"]);
+  const pc = toNumber(payload?.["24h_price_change_percent"]);
+  const high = toNumber(payload?.["24h_high"]);
+
+  return {
+    raw: payload,
+    price,
+    change24h: chg,
+    change24hPercent: pc,
+    high24h: high,
+    endpoint: ENDPOINT,
+  };
+}
+
 function renderScreen(payload) {
   console.clear();
   const nowLocal = new Date().toLocaleString();
@@ -113,16 +132,21 @@ function renderErrorScreen(err) {
 
 async function tick() {
   try {
-    if (!API_KEY) throw new Error("Falta API key (setear API_NINJAS_KEY).");
-    const payload = await fetchJsonWithTimeout(ENDPOINT, REQUEST_TIMEOUT_MS);
-    renderScreen(payload);
+    const { raw } = await fetchBitcoin();
+    renderScreen(raw);
   } catch (err) {
     renderErrorScreen(err);
   }
 }
 
-(async () => {
-  await tick();
-  setInterval(tick, POLL_MS);
-})().catch(renderErrorScreen);
+if (require.main === module) {
+  (async () => {
+    await tick();
+    setInterval(tick, POLL_MS);
+  })().catch(renderErrorScreen);
+}
+
+module.exports = {
+  fetchBitcoin,
+};
 
